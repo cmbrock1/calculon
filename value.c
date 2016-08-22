@@ -12,8 +12,8 @@
 #include "Fatal.h"
 
 //extern void Fatal(char *,...);
-static value *newValue(int);
-static value *newValueStr(int t,int strlength);
+static value *newValue(int,int);
+//static value *newValueStr(int t,int strlength);
 
 /**** Public Interface ****/
 int INTEGER = 0;
@@ -22,25 +22,25 @@ int STRING = 2;
 int VARIABLE = 3;
 
 value *newValueI(int i){
-    value *v = newValue(INTEGER);
+    value *v = newValue(INTEGER,1);
     v->ival = i;
     return v;
 }
 
 value *newValueR(double r){
-    value *v = newValue(REAL);
+    value *v = newValue(REAL,1);
     v->rval = r;
     return v;
 }
 
 value *newValueS(char *s){
-    value *v = newValueStr(STRING,strlen(s));
+    value *v = newValue(STRING,strlen(s));
     strcpy(v->sval,s);
     return v;
 }
 
 value *newValueV(char *var){
-    value *v = newValueStr(VARIABLE,strlen(var));
+    value *v = newValue(VARIABLE,strlen(var));
     strcpy(v->sval,var);
     return v;
 }
@@ -58,18 +58,18 @@ void printValue(value *v){
 
 /**** Private Interface ****/
 
-static value *newValue(int t){
-    value *v;
-    if ((v = malloc(sizeof(value))) == 0){
-            Fatal("out of memory\n");
-    }
-    v->type = t;
-    v->ival = 0;
-    v->rval = 0;
-    v->sval = 0;
-    return v;
-}
-static value *newValueStr(int t,int strlength){
+// static value *newValue(int t){
+//     value *v;
+//     if ((v = malloc(sizeof(value))) == 0){
+//             Fatal("out of memory\n");
+//     }
+//     v->type = t;
+//     v->ival = 0;
+//     v->rval = 0;
+//     v->sval = 0;
+//     return v;
+// }
+static value *newValue(int t,int strlength){
     value *v;
     if ((v = (value *)malloc(sizeof(value) + strlength + 1)) == 0){
         Fatal("out of memory\n");
