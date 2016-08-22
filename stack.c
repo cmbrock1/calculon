@@ -31,9 +31,7 @@ int FullStack(stack *s){
     return false;
 }
 void Push(node *n, stack *s){
-    node *temp;
-    temp = (node *)malloc(sizeof(node));
-    temp->val = n->val;
+    node *temp = newNode(n->val);
     temp->next = s->top;
     s->top = temp;
 }

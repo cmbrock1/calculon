@@ -13,9 +13,10 @@ typedef struct queue{
     node *tail;
 }queue;
 
-extern void initQueue(queue *q);
+extern queue *newQueue();
 extern int EmptyQueue(queue *q);
 extern int FullQueue(queue *q);
 extern void Enqueue(queue *q,node *n);
 extern node *Dequeue(queue *q);
+extern void DestroyQueue(queue *q);
 #endif // QUEUE_H

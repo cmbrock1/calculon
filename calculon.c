@@ -127,6 +127,60 @@ void TestStack(test *t){
     free(s);
     // printf("Success\n");
 }
+void TestQueueHead(test *t,node *n,queue *q){
+    t->testsRan++;
+    if(n == NULL){
+        if(q->head == NULL)
+            t->testsPassed++;
+        else
+            printf("TestQueueHead Failed\n");
+    }
+    else{
+        if((q->head->val->ival == n->val->ival) &&
+           (q->head->val->rval == n->val->rval) &&
+           (strcmp(q->head->val->sval,n->val->sval) == 0)){
+            t->testsPassed++;
+        }
+        else
+            printf("TestQueueHead Failed\n");
+    }
+}
+void TestQueueHeadNext(test *t,node *n,queue *q){
+    t->testsRan++;
+    if(n == NULL){
+        if(q->head->next == NULL)
+            t->testsPassed++;
+        else
+            printf("TestQueueHeadNext Failed\n");
+    }
+    else{
+        if((q->head->next->val->ival == n->val->ival) &&
+           (q->head->next->val->rval == n->val->rval) &&
+           (strcmp(q->head->next->val->sval,n->val->sval) == 0)){
+            t->testsPassed++;
+        }
+        else
+            printf("TestQueueHeadNext Failed\n");
+    }
+}
+void TestQueueTail(test *t,node *n,queue *q){
+    t->testsRan++;
+    if(n == NULL){
+        if(q->tail == NULL)
+            t->testsPassed++;
+        else
+            printf("TestQueueTail Failed\n");
+    }
+    else{
+        if((q->tail->val->ival == n->val->ival) &&
+           (q->tail->val->rval == n->val->rval) &&
+           (strcmp(q->tail->val->sval,n->val->sval) == 0)){
+            t->testsPassed++;
+        }
+        else
+            printf("TestQueueTail Failed\n");
+    }
+}
 void TestQueue(test *t){
     value *v0,*v1,*v2,*v3;
     v0 = newValueI(10);
@@ -146,6 +200,42 @@ void TestQueue(test *t){
     TestSetNode(t,n2);
     n3 = newNode(v3);
     TestSetNode(t,n3);
+    queue *q;
+    q = newQueue();
+    TestQueueHead(t,NULL,q);
+    TestQueueTail(t,NULL,q);
+    Enqueue(q,n0);
+    TestQueueHead(t,n0,q);
+    TestQueueTail(t,n0,q);
+    Enqueue(q,n1);
+    TestQueueHead(t,n0,q);
+    TestQueueHeadNext(t,n1,q);
+    TestQueueTail(t,n1,q);
+    Enqueue(q,n2);
+    TestQueueHead(t,n0,q);
+    TestQueueHeadNext(t,n1,q);
+    TestQueueTail(t,n2,q);
+    Enqueue(q,n3);
+    TestQueueHead(t,n0,q);
+    TestQueueHeadNext(t,n1,q);
+    TestQueueTail(t,n3,q);
+    node *node = Dequeue(q);
+    TestQueueHead(t,n1,q);
+    TestQueueHeadNext(t,n2,q);
+    TestQueueTail(t,n3,q);
+    free(node);
+    node = Dequeue(q);
+    TestQueueHead(t,n2,q);
+    TestQueueHeadNext(t,n3,q);
+    TestQueueTail(t,n3,q);
+    free(node);
+    node = Dequeue(q);
+    TestQueueHead(t,n3,q);
+    TestQueueTail(t,n3,q);
+    free(node);
+    node = Dequeue(q);
+    TestQueueHead(t,NULL,q);
+    TestQueueTail(t,NULL,q);
     free(n0);
     free(n1);
     free(n2);
@@ -154,6 +244,8 @@ void TestQueue(test *t){
     free(v1);
     free(v2->sval);
     free(v2);
+    DestroyQueue(q);
+    free(q);
 }
 int main(int argc, char **argv) {
     test t;
