@@ -5,9 +5,10 @@
 #include "stack.h"
 
 void TestStack(void){
-    value *v0 = newValueI(10);
-    value *v1 = newValueR(1.1);
-    value *v2 = newValueS("Hello World");
+    value *v0,*v1,*v2;
+    v0 = newValueI(10);
+    v1 = newValueR(1.1);
+    v2 = newValueS("Hello World");
     node *n0 = newNode(v0);
     node *n1 = newNode(v1);
     node *n2 = newNode(v2);
