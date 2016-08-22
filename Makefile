@@ -1,10 +1,10 @@
-all: calculon
+all: test
 
-calculon: calculon.o value.o stack.o node.o Fatal.o queue.o
-	g++ -Wall -std=c99 -v -o calculon calculon.o value.o stack.o node.o Fatal.o queue.o
+test: testing.o value.o stack.o node.o Fatal.o queue.o
+	g++ -Wall -std=c99 -v -o testing testing.o value.o stack.o node.o Fatal.o queue.o
 
-calculon.o: calculon.c value.h node.h stack.h
-	gcc -Wall -std=c99 -c -g calculon.c
+testing.o: testing.c value.h node.h stack.h
+	gcc -Wall -std=c99 -c -g testing.c
 
 value.o: value.c value.h Fatal.o
 	gcc -Wall -std=c99 -c -g value.c
