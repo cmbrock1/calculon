@@ -1,7 +1,7 @@
 all: calculon
 
-calculon: calculon.o value.o stack.o node.o Fatal.o
-	g++ -Wall -std=c99 -v -o calculon calculon.o value.o stack.o node.o Fatal.o
+calculon: calculon.o value.o stack.o node.o Fatal.o queue.o
+	g++ -Wall -std=c99 -v -o calculon calculon.o value.o stack.o node.o Fatal.o queue.o
 
 calculon.o: calculon.c value.h node.h stack.h
 	gcc -Wall -std=c99 -c -g calculon.c
@@ -17,6 +17,9 @@ node.o: node.c node.h Fatal.o
 
 Fatal.o: Fatal.c Fatal.h
 	gcc -Wall -std=c99 -c -g Fatal.c
+
+queue.o: queue.c queue.h
+	gcc -Wall -std=c99 -c -g queue.c
 
 clean:
 	rm *o calculon

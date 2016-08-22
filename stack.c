@@ -7,6 +7,7 @@
 *******************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "stack.h"
 #include "Fatal.h"
 
@@ -22,12 +23,12 @@ stack *newStack(void){
 }
 int EmptyStack(stack *s){
     if(s->top == NULL)
-        return 1;
+        return true;
     else
-        return 0;
+        return false;
 }
 int FullStack(stack *s){
-    return 0;
+    return false;
 }
 void Push(node *n, stack *s){
     node *temp;

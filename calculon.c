@@ -4,6 +4,7 @@
 #include "value.h"
 #include "node.h"
 #include "stack.h"
+#include "queue.h"
 typedef struct test{
     int testsPassed;
     int testsRan;
