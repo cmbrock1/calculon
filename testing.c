@@ -256,6 +256,6 @@ int main(int argc, char **argv) {
     else if(t.testsRan > t.testsPassed)
         printf("%d Tests Failed and %d Tests Passed\n", (t.testsRan - t.testsPassed),t.testsPassed);
     else
-        printf("Error number of Tests Passed is greater than Tests Ran!\n");
+        printf("Error, number of Tests Passed is greater than Tests Ran!\n");
     return 0;
 }
