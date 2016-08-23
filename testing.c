@@ -249,6 +249,8 @@ void TestQueue(test *t){
 }
 int main(int argc, char **argv) {
     test t;
+    t.testsRan = 0;
+    t.testsPassed = 0;
     TestStack(&t);
     TestQueue(&t);
     if(t.testsRan == t.testsPassed)
@@ -256,6 +258,6 @@ int main(int argc, char **argv) {
     else if(t.testsRan > t.testsPassed)
         printf("%d Tests Failed and %d Tests Passed\n", (t.testsRan - t.testsPassed),t.testsPassed);
     else
-        printf("Error, number of Tests Passed is greater than Tests Ran!\n");
+        printf("Error, number of Tests Passed %d is greater than Tests Ran %d!\n",t.testsPassed,t.testsRan);
     return 0;
 }
