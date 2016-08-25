@@ -44,13 +44,13 @@ void Pop(stack *s, node *n){
         free(temp);
     }
 }
-void printStack(stack *s){
+void printStack(stack *s,FILE *fp){
     node *temp = s->top;
     if(s->top == NULL)
         return;
-    printNode(temp);
+    printNode(temp,fp);
     while(temp->next != NULL){
         temp = temp->next;
-        printNode(temp);
+        printNode(temp,fp);
     }
 }

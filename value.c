@@ -5,81 +5,94 @@
 *
 *   This program is entirely my own work
 *******************************************************************/
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "value.h"
-#include "Fatal.h"
 
-//extern void Fatal(char *,...);
-static value *newValue(int,int);
-//static value *newValueStr(int t,int strlength);
+char *INTEGER = "INTEGER";
+char *REAL = "REAL";
+char *STRING = "STRING";
+char *VARIABLE = "VARIABLE";
+char *OPERATOR = "OPERATOR";
+char *SEMICOLON = "SEMICOLON";
 
-/**** Public Interface ****/
-int INTEGER = 0;
-int REAL = 1;
-int STRING = 2;
-int VARIABLE = 3;
+static value *newValue(char *);
 
-value *newValueI(int i){
-    value *v = newValue(INTEGER,1);
-    v->ival = i;
-    return v;
-}
+/*************** public interface *************/
 
-value *newValueR(double r){
-    value *v = newValue(REAL,1);
-    v->rval = r;
-    return v;
-}
+value *
+newIntegerValue(int v)
+    {
+    value *n = newValue(INTEGER);
+    n->ival = v;
+    return n;
+    }
 
-value *newValueS(char *s){
-    value *v = newValue(STRING,strlen(s));
-    strcpy(v->sval,s);
-    return v;
-}
+value *
+newRealValue(double v)
+    {
+    value *n = newValue(REAL);
+    n->rval = v;
+    return n;
+    }
 
-value *newValueV(char *var){
-    value *v = newValue(VARIABLE,strlen(var));
-    strcpy(v->sval,var);
-    return v;
-}
+value *
+newStringValue(char *v)
+    {
+    value *n = newValue(STRING);
+    n->sval = v;
+    return n;
+    }
 
-void printValue(value *v){
-    if(v->type == 0)
-        printf("value->INTEGER = %d\n", v->ival);
-    else if(v->type == 1)
-        printf("value->REAL = %f\n", v->rval);
-    else if(v->type == 2)
-        printf("value->STRING = %s\n", v->sval);
+value *
+newVariableValue(char *v)
+    {
+    value *n = newValue(VARIABLE);
+    n->sval = v;
+    return n;
+    }
+
+value *
+newOperatorValue(char *v)
+    {
+    value *n = newValue(OPERATOR);
+    n->sval = v;
+    return n;
+    }
+
+void
+displayValue(FILE *fp,value *v)
+    {
+    if (v->type == STRING)
+       fprintf(fp,"\"%s\"",v->sval);
+    else if (v->type == INTEGER)
+       fprintf(fp,"%d",v->ival);
+    else if (v->type == REAL)
+       fprintf(fp,"%f",v->rval);
+    else if (v->type == VARIABLE)
+       fprintf(fp,"%s",v->sval);
+    else if (v->type == OPERATOR)
+       fprintf(fp,"%s",v->sval);
     else
-        printf("value->VARIABLE = %s\n", v->sval);
+       fprintf(fp,"<UNKNOWN VALUE TYPE>");
+    }
+
+/*************** private methods *************/
+
+value *newValue(char *t)
+{
+    value *n = malloc(sizeof(value));
+    if (n == 0) { fprintf(stderr,"out of memory"); exit(-1); }
+    n->type = t;
+    return n;
 }
 
-/**** Private Interface ****/
-
-// static value *newValue(int t){
-//     value *v;
-//     if ((v = malloc(sizeof(value))) == 0){
-//             Fatal("out of memory\n");
-//     }
-//     v->type = t;
-//     v->ival = 0;
-//     v->rval = 0;
-//     v->sval = 0;
-//     return v;
+// static value *newValue(char *t){
+//     value *n = malloc(sizeof(value));
+//     if (n == 0) { fprintf(stderr,"out of memory"); exit(-1); }
+//     n->type = t;
+//     n->ival = 0;
+//     n->rval = 0;
+//     n->sval = 0;
+//     return n;
 // }
-static value *newValue(int t,int strlength){
-    value *v;
-    if ((v = (value *)malloc(sizeof(value) + strlength + 1)) == 0){
-        Fatal("out of memory\n");
-    }
-    v->type = t;
-    v->ival = 0;
-    v->rval = 0;
-    if ((v->sval = (char *)malloc(strlength + 1)) == 0){
-        Fatal("out of memory\n");
-    }
-    strcpy(v->sval,"");
-    return v;
-}

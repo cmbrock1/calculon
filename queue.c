@@ -60,3 +60,13 @@ void DestroyQueue(queue *q){
         }
     }
 }
+void printQueue(queue *q,FILE *fp){
+    node *temp = q->head;
+    if(q->head == NULL)
+        return;
+    printNode(temp,fp);
+    while(temp->next != NULL){
+        temp = temp->next;
+        printNode(temp,fp);
+    }
+}

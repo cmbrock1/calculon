@@ -2,47 +2,42 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include "scanner.h"
+#include "queue.h"
+#include "value.h"
+#include "Fatal.h"
 
 /* options */
 /* -v print Author's Name and exit */
 
 int ProcessOptions(int,char **);
-void Fatal(char *,...);
-void ReadFromUser(void);
-void ReadFromFile(char *filename);
+queue *ProcessInput(FILE *fp);
 
 int main(int argc,char **argv){
     int argIndex;
 
-    //if (argc == 1) Fatal("%d arguments!\n",argc-1);
-
     argIndex = ProcessOptions(argc,argv);
 
-    if (argIndex == argc)
-        ReadFromUser();
+    if (argIndex == argc){
+        queue *q = newQueue();
+        q = ProcessInput(stdin);
+        printQueue(q,stdin);
+        free(q);
+    }
     else {
         //ReadFromFile();
         FILE *fp;
         fp = fopen(argv[argIndex], "r");
+        queue *q = newQueue();
+        q = ProcessInput(fp);
+        free(q);
         fclose(fp);
     }
-
+    printf("press any key to continue...\n");
+    getchar();
     return 0;
 }
-
-void
-Fatal(char *fmt, ...)
-    {
-    va_list ap;
-
-    fprintf(stderr,"An error occured: ");
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-
-    exit(-1);
-    }
 
 /* only -oXXX  or -o XXX options */
 
@@ -112,12 +107,37 @@ ProcessOptions(int argc, char **argv)
     return argIndex;
 }
 
-void ReadFromUser(){
-    char token[500];
-    strcpy(token,readToken(stdin));
-    
-    printf("token = %s\n",token);
-    while((token != ";") || (token != EOF)){
-        strcpy(token,readToken(stdin));
+static value *readValue(FILE *fp){
+    value *v;
+    if (stringPending(fp))
+        v = newStringValue(readString(fp));
+    else
+        {
+        char *token = readToken(fp);
+        if (strchr(token,'.') != 0) // dot found!
+            v = newRealValue(atof(token));
+        else if (*token == '-' || isdigit(*token))
+            v = newIntegerValue(atoi(token));
+        else if (*token == ';')
+            v = NULL;
+        else
+            Fatal("The token %s is not a value\n",token);
+        }
+    return v;
+}
+
+node *addInputToNode(FILE *fp){
+    value *v = readValue(fp);
+    node *n = newNode(v);
+    return n;
+}
+
+queue *ProcessInput(FILE *fp){
+    queue *q = newQueue();
+    node *n = addInputToNode(fp);
+    while(n->val != NULL){
+        Enqueue(q,n);
+        n = addInputToNode(fp);
     }
+    return q;
 }

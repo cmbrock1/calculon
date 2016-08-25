@@ -19,4 +19,5 @@ extern int FullQueue(queue *q);
 extern void Enqueue(queue *q,node *n);
 extern node *Dequeue(queue *q);
 extern void DestroyQueue(queue *q);
+extern void printQueue(queue *q,FILE *fp);
 #endif // QUEUE_H

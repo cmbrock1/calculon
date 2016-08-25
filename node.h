@@ -11,9 +11,11 @@
 typedef struct node{
     value *val;
     struct node *next;
+    struct node *left;
+    struct node *right;
 }node;
 
 extern node *newNode(value *v);
-extern void printNode(node *n);
+extern void printNode(node *n,FILE *fp);
 
 #endif // NODE_H

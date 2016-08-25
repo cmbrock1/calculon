@@ -1,16 +1,20 @@
-
+#   Makefile
+#   Cameron Brock
+#   Programming Assignment 1 calculon
+#
+#   This program is entirely my own work
 CC=gcc
 CFLAGS=-Wall -std=c99 -c -g
 TESTOBJECTS=testing.o value.o stack.o node.o Fatal.o queue.o
-CALCOBJECTS=calculon.o scanner.o
+CALCOBJECTS=calculon.o scanner.o queue.o value.o stack.o node.o Fatal.o
 BINARYS=calculon testing
 all: calculon
 
 calculon: ${CALCOBJECTS}
-	${CC} -Wall -std=c99 -o calculon calculon.o scanner.o
+	${CC} -Wall -std=c99 -o calculon ${CALCOBJECTS}
 
 test: ${TESTOBJECTS}
-	${CC} -Wall -std=c99 -o testing ${TESTOBJECTS}
+	${CC} -Wall -std=c99 -o testing ${TESTOBJECTS}; ./testing;
 
 calculon.o: calculon.c
 	${CC} ${CFLAGS} calculon.c

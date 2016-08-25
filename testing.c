@@ -1,3 +1,10 @@
+/*******************************************************************
+*   testing.c
+*   Cameron Brock
+*   Programming Assignment 1 calculon
+*
+*   This program is entirely my own work
+*******************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,6 +12,7 @@
 #include "node.h"
 #include "stack.h"
 #include "queue.h"
+
 typedef struct test{
     int testsPassed;
     int testsRan;
@@ -44,10 +52,17 @@ void TestStackTop(test *t,node *n,stack *s){
             printf("TestStackTop Failed\n");
     }
     else{
-        if((s->top->val->ival == n->val->ival) &&
-           (s->top->val->rval == n->val->rval) &&
-           (strcmp(s->top->val->sval,n->val->sval) == 0)){
-            t->testsPassed++;
+        if((strcmp(s->top->val->type,"INTEGER") == 0)){
+        		if((s->top->val->ival == n->val->ival))
+        			 t->testsPassed++;
+        }
+        else if((strcmp(s->top->val->type,"REAL") == 0)){
+        		if((s->top->val->rval == n->val->rval))
+                t->testsPassed++;
+        }
+        else if((strcmp(s->top->val->type,"STRING") == 0) || (strcmp(s->top->val->type,"VARIABLE") == 0)){
+                if((s->top->val->rval == n->val->rval))
+                t->testsPassed++;
         }
         else
             printf("TestStackTop Failed\n");
@@ -61,11 +76,18 @@ void TestStackNext(test *t,node *n,stack *s){
         else
             printf("TestStackNext Failed\n");
     }
-    else {
-        if((s->top->next->val->ival == n->val->ival) &&
-           (s->top->next->val->rval == n->val->rval) &&
-           (strcmp(s->top->next->val->sval,n->val->sval) == 0)){
-            t->testsPassed++;
+    else{
+        if((strcmp(s->top->next->val->type,"INTEGER") == 0)){
+                if((s->top->next->val->ival == n->val->ival))
+                     t->testsPassed++;
+        }
+        else if((strcmp(s->top->next->val->type,"REAL") == 0)){
+                if((s->top->next->val->rval == n->val->rval))
+                t->testsPassed++;
+        }
+        else if((strcmp(s->top->next->val->type,"STRING") == 0) || (strcmp(s->top->next->val->type,"VARIABLE") == 0)){
+                if((s->top->next->val->rval == n->val->rval))
+                t->testsPassed++;
         }
         else
             printf("TestStackNext Failed\n");
@@ -73,14 +95,20 @@ void TestStackNext(test *t,node *n,stack *s){
 
 }
 void TestStack(test *t){
+    int INT_VAR = 10;
+    double REAL_VAR = 1.1;
+    char *STRING_VAR = malloc(12 + 1);
+    strcpy(STRING_VAR,"Hello World");
+    char *VARIABLE_VAR = malloc(19 + 1);
+    strcpy(VARIABLE_VAR,"This is a Var Name");
     value *v0,*v1,*v2,*v3;
-    v0 = newValueI(10);
+    v0 = newIntegerValue(INT_VAR);
     TestSetValue(t,v0);
-    v1 = newValueR(1.1);
+    v1 = newRealValue(REAL_VAR);
     TestSetValue(t,v1);
-    v2 = newValueS("Hello World");
+    v2 = newStringValue(STRING_VAR);
     TestSetValue(t,v2);
-    v3 = newValueV("This is a Var Name");
+    v3 = newVariableValue(VARIABLE_VAR);
     TestSetValue(t,v3);
     node *n0,*n1,*n2,*n3;
     n0 = newNode(v0);
@@ -135,11 +163,18 @@ void TestQueueHead(test *t,node *n,queue *q){
         else
             printf("TestQueueHead Failed\n");
     }
-    else{
-        if((q->head->val->ival == n->val->ival) &&
-           (q->head->val->rval == n->val->rval) &&
-           (strcmp(q->head->val->sval,n->val->sval) == 0)){
-            t->testsPassed++;
+    else {
+        if((strcmp(q->head->val->type,"INTEGER") == 0)){
+            if((q->head->val->ival == n->val->ival))
+                t->testsPassed++;
+        }
+        else if((strcmp(q->head->val->type,"REAL") == 0)){
+            if((q->head->val->rval == n->val->rval))
+                t->testsPassed++;
+        }
+        else if((strcmp(q->head->val->type,"STRING") == 0) || (strcmp(q->head->val->type,"VARIABLE") == 0)){
+            if((q->head->val->rval == n->val->rval))
+                t->testsPassed++;
         }
         else
             printf("TestQueueHead Failed\n");
@@ -154,10 +189,17 @@ void TestQueueHeadNext(test *t,node *n,queue *q){
             printf("TestQueueHeadNext Failed\n");
     }
     else{
-        if((q->head->next->val->ival == n->val->ival) &&
-           (q->head->next->val->rval == n->val->rval) &&
-           (strcmp(q->head->next->val->sval,n->val->sval) == 0)){
-            t->testsPassed++;
+        if((strcmp(q->head->next->val->type,"INTEGER") == 0)){
+            if((q->head->next->val->ival == n->val->ival))
+                t->testsPassed++;
+        }
+        else if((strcmp(q->head->next->val->type,"REAL") == 0)){
+            if((q->head->next->val->rval == n->val->rval))
+                t->testsPassed++;
+        }
+        else if((strcmp(q->head->next->val->type,"STRING") == 0) || (strcmp(q->head->next->val->type,"VARIABLE") == 0)){
+            if((q->head->next->val->rval == n->val->rval))
+                t->testsPassed++;
         }
         else
             printf("TestQueueHeadNext Failed\n");
@@ -172,24 +214,37 @@ void TestQueueTail(test *t,node *n,queue *q){
             printf("TestQueueTail Failed\n");
     }
     else{
-        if((q->tail->val->ival == n->val->ival) &&
-           (q->tail->val->rval == n->val->rval) &&
-           (strcmp(q->tail->val->sval,n->val->sval) == 0)){
-            t->testsPassed++;
+        if((strcmp(q->tail->val->type,"INTEGER") == 0)){
+            if((q->tail->val->ival == n->val->ival))
+                t->testsPassed++;
+        }
+        else if((strcmp(q->tail->val->type,"REAL") == 0)){
+            if((q->tail->val->rval == n->val->rval))
+                t->testsPassed++;
+        }
+        else if((strcmp(q->tail->val->type,"STRING") == 0) || (strcmp(q->tail->val->type,"VARIABLE") == 0)){
+            if((q->tail->val->rval == n->val->rval))
+                t->testsPassed++;
         }
         else
             printf("TestQueueTail Failed\n");
     }
 }
 void TestQueue(test *t){
+    int INT_VAR = 10;
+    double REAL_VAR = 1.1;
+    char *STRING_VAR = malloc(12 + 1);
+    strcpy(STRING_VAR,"Hello World");
+    char *VARIABLE_VAR = malloc(19 + 1);
+    strcpy(VARIABLE_VAR,"This is a Var Name");
     value *v0,*v1,*v2,*v3;
-    v0 = newValueI(10);
+    v0 = newIntegerValue(INT_VAR);
     TestSetValue(t,v0);
-    v1 = newValueR(1.1);
+    v1 = newRealValue(REAL_VAR);
     TestSetValue(t,v1);
-    v2 = newValueS("Hello World");
+    v2 = newStringValue(STRING_VAR);
     TestSetValue(t,v2);
-    v3 = newValueV("This is a Var Name");
+    v3 = newVariableValue(VARIABLE_VAR);
     TestSetValue(t,v3);
     node *n0,*n1,*n2,*n3;
     n0 = newNode(v0);

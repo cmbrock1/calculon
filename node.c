@@ -11,6 +11,8 @@
 #include "Fatal.h"
 void initNode(node *n){
     n->next = NULL;
+    n->left = NULL;
+    n->right = NULL;
 }
 node *newNode(value *v){
     node *n;
@@ -20,6 +22,6 @@ node *newNode(value *v){
     n->val = v;
     return n;
 }
-void printNode(node *n){
-    printValue(n->val);
+void printNode(node *n,FILE *fp){
+    displayValue(fp,n->val);
 }
