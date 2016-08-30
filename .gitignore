@@ -1,7 +1,6 @@
 *.o
 calculon
 testing
-<<<<<<< HEAD
 .cproject
 .project
 .settings/
