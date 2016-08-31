@@ -7,6 +7,7 @@
 *******************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "value.h"
 
 char *INTEGER = "INTEGER";
@@ -59,20 +60,26 @@ newOperatorValue(char *v)
     n->sval = v;
     return n;
     }
+value *
+newSemicolonValue(void)
+    {
+    value *n = newValue(SEMICOLON);
+    return n;
+    }
 
 void
 displayValue(FILE *fp,value *v)
     {
-    if (v->type == STRING)
-       fprintf(fp,"\"%s\"",v->sval);
-    else if (v->type == INTEGER)
-       fprintf(fp,"%d",v->ival);
-    else if (v->type == REAL)
-       fprintf(fp,"%f",v->rval);
-    else if (v->type == VARIABLE)
-       fprintf(fp,"%s",v->sval);
-    else if (v->type == OPERATOR)
-       fprintf(fp,"%s",v->sval);
+    if (strcmp(v->type,STRING) == 0)
+       fprintf(fp,"\"%s\"\n",v->sval);
+    else if (strcmp(v->type,INTEGER) == 0)
+       fprintf(fp,"%d\n",v->ival);
+    else if (strcmp(v->type,REAL) == 0)
+       fprintf(fp,"%f\n",v->rval);
+    else if (strcmp(v->type,VARIABLE) == 0)
+       fprintf(fp,"%s\n",v->sval);
+    else if (strcmp(v->type,OPERATOR) == 0)
+       fprintf(fp,"%s\n",v->sval);
     else
        fprintf(fp,"<UNKNOWN VALUE TYPE>");
     }

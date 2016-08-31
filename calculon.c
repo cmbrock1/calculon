@@ -31,11 +31,12 @@ int main(int argc,char **argv){
         fp = fopen(argv[argIndex], "r");
         queue *q = newQueue();
         q = ProcessInput(fp);
+        printQueue(q,stdin);
         free(q);
         fclose(fp);
     }
-    printf("press any key to continue...\n");
-    getchar();
+    //printf("press any key to continue...\n");
+    //getchar();
     return 0;
 }
 
@@ -119,7 +120,9 @@ static value *readValue(FILE *fp){
         else if (*token == '-' || isdigit(*token))
             v = newIntegerValue(atoi(token));
         else if (*token == ';')
-            v = NULL;
+            v = newSemicolonValue();
+        else if (*token == 0)
+            v = 0;
         else
             Fatal("The token %s is not a value\n",token);
         }
@@ -128,6 +131,8 @@ static value *readValue(FILE *fp){
 
 node *addInputToNode(FILE *fp){
     value *v = readValue(fp);
+    printf("This is the value: ");
+    displayValue(stdout,v);
     node *n = newNode(v);
     return n;
 }
@@ -135,8 +140,10 @@ node *addInputToNode(FILE *fp){
 queue *ProcessInput(FILE *fp){
     queue *q = newQueue();
     node *n = addInputToNode(fp);
-    while(n->val != NULL){
-        Enqueue(q,n);
+    printNode(n,stdin);
+    while(n->val != 0){
+        if(n->val->type != SEMICOLON)
+            Enqueue(q,n);
         n = addInputToNode(fp);
     }
     return q;
