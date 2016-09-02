@@ -13,6 +13,7 @@ typedef struct node{
     struct node *next;
     struct node *left;
     struct node *right;
+    char *key;
 }node;
 
 extern node *newNode(value *v);

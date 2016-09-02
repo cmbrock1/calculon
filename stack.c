@@ -35,14 +35,18 @@ void Push(node *n, stack *s){
     temp->next = s->top;
     s->top = temp;
 }
-void Pop(stack *s, node *n){
+node *Pop(stack *s){
     node *temp;
     if(!EmptyStack(s)){
-        n->val = s->top->val;
+        //n->val = s->top->val;
         temp = s->top;
         s->top = s->top->next;
-        free(temp);
+        temp->next = NULL;
+        return temp;
     }
+    else
+        temp = NULL;
+    return temp;
 }
 void printStack(stack *s,FILE *fp){
     node *temp = s->top;

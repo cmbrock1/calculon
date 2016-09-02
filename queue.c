@@ -61,6 +61,8 @@ void DestroyQueue(queue *q){
     }
 }
 void printQueue(queue *q,FILE *fp){
+    if(q == NULL)
+        return;
     node *temp = q->head;
     if(q->head == NULL)
         return;
@@ -69,4 +71,5 @@ void printQueue(queue *q,FILE *fp){
         temp = temp->next;
         printNode(temp,fp);
     }
+    printf("\n");
 }

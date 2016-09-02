@@ -15,6 +15,6 @@ extern stack *newStack(void);
 extern int EmptyStack(stack *s);
 extern int FullStack(stack *s);
 extern void Push(node *n, stack *s);
-extern void Pop(stack *s, node *n);
+extern node *Pop(stack *s);
 extern void printStack(stack *s,FILE *fp);
 #endif // STACK_H

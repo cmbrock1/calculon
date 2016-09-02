@@ -13,6 +13,7 @@ void initNode(node *n){
     n->next = NULL;
     n->left = NULL;
     n->right = NULL;
+    n->key = NULL;
 }
 node *newNode(value *v){
     node *n;
@@ -20,6 +21,15 @@ node *newNode(value *v){
         Fatal("out of memory\n");
     initNode(n);
     n->val = v;
+    return n;
+}
+node *newTreeNode(value *v,char *key){
+    node *n;
+    if ((n = malloc(sizeof(node))) == 0)
+        Fatal("out of memory\n");
+    initNode(n);
+    n->val = v;
+    n->key = key;
     return n;
 }
 void printNode(node *n,FILE *fp){

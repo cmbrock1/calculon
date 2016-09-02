@@ -6,7 +6,7 @@
 CC=gcc
 CFLAGS=-Wall -std=c99 -c -g
 TESTOBJECTS=testing.o value.o stack.o node.o Fatal.o queue.o
-CALCOBJECTS=calculon.o scanner.o queue.o value.o stack.o node.o Fatal.o
+CALCOBJECTS=calculon.o scanner.o queue.o value.o stack.o node.o Fatal.o -lm
 BINARYS=calculon testing
 all: calculon
 

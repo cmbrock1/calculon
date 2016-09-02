@@ -71,35 +71,27 @@ void
 displayValue(FILE *fp,value *v)
     {
     if (strcmp(v->type,STRING) == 0)
-       fprintf(fp,"\"%s\"\n",v->sval);
+       fprintf(fp,"\"%s\" ",v->sval);
     else if (strcmp(v->type,INTEGER) == 0)
-       fprintf(fp,"%d\n",v->ival);
+       fprintf(fp,"%d ",v->ival);
     else if (strcmp(v->type,REAL) == 0)
-       fprintf(fp,"%f\n",v->rval);
+       fprintf(fp,"%f ",v->rval);
     else if (strcmp(v->type,VARIABLE) == 0)
-       fprintf(fp,"%s\n",v->sval);
+       fprintf(fp,"%s ",v->sval);
     else if (strcmp(v->type,OPERATOR) == 0)
-       fprintf(fp,"%s\n",v->sval);
+       fprintf(fp,"%s ",v->sval);
+    else if (strcmp(v->type,SEMICOLON) == 0)
+       fprintf(fp,";\n");
     else
        fprintf(fp,"<UNKNOWN VALUE TYPE>");
     }
 
 /*************** private methods *************/
 
-value *newValue(char *t)
+static value *newValue(char *t)
 {
     value *n = malloc(sizeof(value));
     if (n == 0) { fprintf(stderr,"out of memory"); exit(-1); }
     n->type = t;
     return n;
 }
-
-// static value *newValue(char *t){
-//     value *n = malloc(sizeof(value));
-//     if (n == 0) { fprintf(stderr,"out of memory"); exit(-1); }
-//     n->type = t;
-//     n->ival = 0;
-//     n->rval = 0;
-//     n->sval = 0;
-//     return n;
-// }
