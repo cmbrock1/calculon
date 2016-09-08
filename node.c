@@ -14,6 +14,7 @@ void initNode(node *n){
     n->left = NULL;
     n->right = NULL;
     n->key = NULL;
+    n->val = NULL;
 }
 node *newNode(value *v){
     node *n;

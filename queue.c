@@ -11,6 +11,7 @@
 #include "queue.h"
 #include "node.h"
 #include "Fatal.h"
+
 void initQueue(queue *q){
     q->head = q->tail = NULL;
 }

@@ -7,6 +7,7 @@
 *******************************************************************/
 #ifndef VALUE_H
 #define VALUE_H
+#include <stdio.h>
 typedef struct value{
     char* type;
     int ival;

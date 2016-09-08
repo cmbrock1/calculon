@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "stack.h"
+#include "node.h"
 #include "Fatal.h"
 
 void initStack(stack *s){

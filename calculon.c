@@ -1,3 +1,10 @@
+/*******************************************************************
+*   calculon.c
+*   Cameron Brock
+*   Programming Assignment 1 calculon
+*
+*   This program is entirely my own work
+*******************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -9,60 +16,56 @@
 #include "queue.h"
 #include "stack.h"
 #include "value.h"
+#include "tree.h"
 #include "Fatal.h"
 
 /* options */
 /* -v print Author's Name and exit */
 bool SETVAR = false;
 bool EndOfFILE = false;
+bool OptionD = false;
 
 int ProcessOptions(int,char **);
 queue *ProcessInputExpression(FILE *);
 queue *InfixToPostfix(queue *);
 int getWeight(node *);
-value *EvalPostfix(queue *);
-value *Combine(value *,value *,value *);
-int isPlus(value *);
-int isInt(value *);
+value *EvalPostfix(tree *,queue *);
+value *Combine(tree *,value *,value *,value *);
 
 int main(int argc,char **argv){
     int argIndex;
-    value *answer;
+    value *answer = NULL;
+    tree *vars = newTree();
     argIndex = ProcessOptions(argc,argv);
     queue *infix = newQueue();
     queue *postfix = newQueue();
+    FILE *fp = NULL;
     if (argIndex == argc){
-        while(!EndOfFILE){
-            infix = ProcessInputExpression(stdin);
-            if(infix != NULL){
-                printQueue(infix,stdout);
-                postfix = InfixToPostfix(infix);
-                answer = EvalPostfix(postfix);
-            }
-        }
+        fp = stdin;
     }
     else {
-        FILE *fp;
         fp = fopen(argv[argIndex], "r");
-        while(!EndOfFILE){
-            infix = ProcessInputExpression(fp);
-            if(infix != NULL){
-                printQueue(infix,stdout);
-                postfix = InfixToPostfix(infix);
-                answer = EvalPostfix(postfix);
-            }
-        }
-        fclose(fp);
     }
-    printQueue(postfix,stdout);
-    if(answer != NULL){
+    while(!EndOfFILE){
+        infix = ProcessInputExpression(fp);
+        if(infix != NULL){
+            //printQueue(infix,stdout);
+            postfix = InfixToPostfix(infix);
+            //printQueue(postfix,stdout);
+            answer = EvalPostfix(vars,postfix);
+        }
+    }
+    if(OptionD == true)
+        printQueue(postfix,stdout);
+    else if(answer != NULL){
         displayValue(stdout,answer);
         printf("\n");
     }
-    free(infix);
-    free(postfix);
-    //printf("press any key to continue...\n");
-    //getchar();
+    //free(infix);
+    //free(postfix);
+    //free(vars);
+    if(fp != NULL)
+        fclose(fp);
     return 0;
 }
 
@@ -74,7 +77,7 @@ ProcessOptions(int argc, char **argv)
     int argIndex;
     int argUsed;
     int separateArg;
-    char *arg;
+    //char *arg;
 
     argIndex = 1;
 
@@ -89,11 +92,11 @@ ProcessOptions(int argc, char **argv)
 
         if (argv[argIndex][2] == '\0')
             {
-            arg = argv[argIndex+1];
+            //arg = argv[argIndex+1];
             separateArg = 1;
             }
-        else
-            arg = argv[argIndex]+2;
+        //else
+            //arg = argv[argIndex]+2;
 
         switch (argv[argIndex][1])
             {
@@ -120,6 +123,10 @@ ProcessOptions(int argc, char **argv)
             case 'v':
                 printf("Cameron Brock\n");
                 argUsed = 1;
+                exit(0);
+                break;
+            case 'd':
+                OptionD = true;
                 break;
             default:
                 Fatal("option %s not understood\n",argv[argIndex]);
@@ -135,7 +142,7 @@ ProcessOptions(int argc, char **argv)
 }
 
 static value *readValue(FILE *fp){
-    value *v;
+    value *v = NULL;
     if (stringPending(fp))
         v = newStringValue(readString(fp));
     else
@@ -149,15 +156,16 @@ static value *readValue(FILE *fp){
                 v = newSemicolonValue();
         else if (strchr(token,'.') != 0) // dot found!
             v = newRealValue(atof(token));
-        else if (*token == '-' || isdigit(*token))
+        else if (((*token == '-') && (isdigit(token[1]))) || isdigit(*token))
             v = newIntegerValue(atoi(token));
         else if (*token == '+' || *token == '-' || *token == '*' ||
-                *token == '/'|| *token == '=')
+                 *token == '/' || *token == '%' || *token == '^' ||
+                 *token == '=' || *token == '(' || *token == ')')
             v = newOperatorValue(token);
         else if (strcmp(token,"var") == 0)
             v = newVariableValue(token);
         else
-            Fatal("The token %s is not a value\n",token);
+            v = newVariableValue(token);
         }
     return v;
 }
@@ -187,7 +195,7 @@ queue *ProcessInputExpression(FILE *fp){
 }
 
 queue *InfixToPostfix(queue *infix){
-    int weight;
+    int weight = 0;
     stack *s = newStack();
     queue *postfix = newQueue();
     node *temp = infix->head;
@@ -200,7 +208,8 @@ queue *InfixToPostfix(queue *infix){
             }
             else if(*temp->val->sval == ')'){
                 while(!EmptyStack(s) && *s->top->val->sval != '('){
-                    Enqueue(postfix,s->top);
+                    if(*s->top->val->sval != '(' && *s->top->val->sval != ')')
+                        Enqueue(postfix,s->top);
                     Pop(s);
                 }
                 if(!EmptyStack(s))
@@ -237,7 +246,7 @@ queue *InfixToPostfix(queue *infix){
 int getWeight(node *n) {
     char ch;
     if(strcmp(n->val->type,OPERATOR) != 0)
-        ch = '~';
+        return 0;
     else
         ch = *n->val->sval;
     switch (ch) {
@@ -252,18 +261,31 @@ int getWeight(node *n) {
     }
 }
 
-value *EvalPostfix(queue *postfix){
+value *EvalPostfix(tree *vars,queue *postfix){
     stack *s = newStack();
     node *temp = postfix->head;
     node *nval = NULL;
+    if( postfix->head != NULL && postfix->head == postfix->tail){
+        if(strcmp(postfix->head->val->type,VARIABLE) == 0){
+            nval = Search(vars,postfix->head->val->sval);
+            return nval->val;
+        }
+        else
+            return postfix->head->val;
+    }
     while(temp != NULL){
         if(strcmp(temp->val->type,OPERATOR) != 0)
             Push(temp,s);
         else {
-            value *arg1 = s->top->val;
-            Pop(s);
             value *arg2 = s->top->val;
-            nval = newNode(Combine(temp->val,arg2,arg1));
+            Pop(s);
+            value *arg1 = s->top->val;
+            //if(*temp-val->sval == '=' && strcmp(arg1,VARIABLE) != 0){
+            //    Pop(s);
+            //    arg1 = s->top->val;
+            //}
+            Pop(s);
+            nval = newNode(Combine(vars,temp->val,arg1,arg2));
             Push(nval,s);
         }
         temp = temp->next;
@@ -308,6 +330,12 @@ int isExp(value *op){
     else
         return false;
 }
+int isEqual(value *op){
+    if(*op->sval == '=')
+        return true;
+    else
+        return false;
+}
 int isInt(value *arg1){
     if(strcmp(arg1->type,INTEGER) == 0)
         return true;
@@ -326,7 +354,18 @@ int isString(value *arg1){
     else
         return false;
 }
-value *Combine(value *op,value *arg1,value *arg2){
+int isVar(value *arg1){
+    if(strcmp(arg1->type,VARIABLE) == 0)
+        return true;
+    else
+        return false;
+}
+void *VariableNotDeclared(char *str){
+    fprintf(stderr,"variable %s was not declared.\n",str);
+    exit(1);
+    return NULL;
+}
+value *Combine(tree *t,value *op,value *arg1,value *arg2){
     // Int arg1 and Int arg2
     if(isPlus(op) && isInt(arg1) && isInt(arg2))
         return newIntegerValue(arg1->ival + arg2->ival);
@@ -438,6 +477,498 @@ value *Combine(value *op,value *arg1,value *arg2){
         sprintf(concat,"%s%s",arg1->sval,arg2->sval);
         return newStringValue(concat);
     }
+    else if(isEqual(op) && isVar(arg1) && SETVAR == true){
+        node *n = newNode(arg2);
+        n->key = arg1->sval;
+        //printf("Key is %s\n",arg1->sval);
+        if(Search(t,arg1->sval) != NULL)
+            Delete(t,arg1->sval);
+        Insert(t,n);
+        //printf("Value of %s is: ",n->key);
+        //printf("%d\n",Search(t,n->key)->val->ival);
+        return n->val;
+    }
+    else if(isPlus(op) && isVar(arg1) && isInt(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(n->val->ival + arg2->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(n->val->rval + arg2->ival);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(atoi(n->val->sval) + arg2->ival);
+        else
+            return NULL;
+    }
+    else if(isMinus(op) && isVar(arg1) && isInt(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(n->val->ival - arg2->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(n->val->rval - arg2->ival);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(atoi(n->val->sval) - arg2->ival);
+        else
+            return NULL;
+    }
+    else if(isMult(op) && isVar(arg1) && isInt(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(n->val->ival * arg2->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(n->val->rval * arg2->ival);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(atoi(n->val->sval) * arg2->ival);
+        else
+            return NULL;
+    }
+    else if(isDivide(op) && isVar(arg1) && isInt(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(n->val->ival / arg2->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(n->val->rval / arg2->ival);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(atoi(n->val->sval) / arg2->ival);
+        else
+            return NULL;
+    }
+    else if(isExp(op) && isVar(arg1) && isInt(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(pow(n->val->ival,arg2->ival));
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(pow(n->val->rval,arg2->ival));
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(pow(atoi(n->val->sval),arg2->ival));
+        else
+            return NULL;
+    }
+    else if(isMod(op) && isVar(arg1) && isInt(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(n->val->ival % arg2->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(fmod(n->val->rval,arg2->ival));
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(atoi(n->val->sval) % arg2->ival);
+        else
+            return NULL;
+    }
+    else if(isPlus(op) && isVar(arg1) && isReal(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(n->val->ival + arg2->rval);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(n->val->rval + arg2->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newRealValue(atof(n->val->sval) + arg2->rval);
+        else
+            return NULL;
+    }
+    else if(isMinus(op) && isVar(arg1) && isReal(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(n->val->ival - arg2->rval);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(n->val->rval - arg2->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newRealValue(atof(n->val->sval) - arg2->rval);
+        else
+            return NULL;
+    }
+    else if(isMult(op) && isVar(arg1) && isReal(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(n->val->ival / arg2->rval);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(n->val->rval / arg2->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(atof(n->val->sval) / arg2->rval);
+        else
+            return NULL;
+    }
+    else if(isDivide(op) && isVar(arg1) && isReal(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(n->val->ival / arg2->rval);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(n->val->rval / arg2->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(atof(n->val->sval) / arg2->rval);
+        else
+            return NULL;
+    }
+    else if(isExp(op) && isVar(arg1) && isReal(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(pow(n->val->ival,arg2->rval));
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(pow(n->val->rval,arg2->rval));
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(pow(atof(n->val->sval),arg2->rval));
+        else
+            return NULL;
+    }
+    else if(isMod(op) && isVar(arg1) && isReal(arg2)){
+        node *n = Search(t,arg1->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg1->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(fmod(n->val->ival,arg2->rval));
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(fmod(n->val->rval,arg2->rval));
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(fmod(atof(n->val->sval),arg2->rval));
+        else
+            return NULL;
+    }
+    else if(isPlus(op) && isInt(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(arg1->ival + n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(arg1->rval + n->val->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(arg1->ival + atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isMinus(op) && isInt(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(arg1->ival - n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(arg1->ival - n->val->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(arg1->ival - atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isMult(op) && isInt(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(arg1->ival / n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(arg1->ival / n->val->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(arg1->ival / atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isDivide(op) && isInt(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(arg1->ival / n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(arg1->ival / n->val->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(arg1->ival / atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isExp(op) && isInt(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(pow(arg1->ival,n->val->ival));
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(pow(arg1->ival,n->val->rval));
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(pow(arg1->ival,atoi(n->val->sval)));
+        else
+            return NULL;
+    }
+    else if(isMod(op) && isInt(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newIntegerValue(arg1->ival % n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(fmod(arg1->ival,n->val->rval));
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newIntegerValue(arg1->ival % atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isPlus(op) && isReal(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(arg1->rval + n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(arg1->rval + n->val->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newRealValue(arg1->rval + atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isMinus(op) && isReal(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(arg1->rval - n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(arg1->rval - n->val->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newRealValue(arg1->rval - atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isMult(op) && isReal(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(arg1->rval / n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(arg1->rval / n->val->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newRealValue(arg1->rval / atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isDivide(op) && isReal(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(arg1->rval / n->val->ival);
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(arg1->rval / n->val->rval);
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newRealValue(arg1->rval / atoi(n->val->sval));
+        else
+            return NULL;
+    }
+    else if(isExp(op) && isReal(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(pow(arg1->rval,n->val->ival));
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(pow(arg1->rval,n->val->rval));
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newRealValue(pow(arg1->rval,atof(n->val->sval)));
+        else
+            return NULL;
+    }
+    else if(isMod(op) && isReal(arg1) && isVar(arg2)){
+        node *n = Search(t,arg2->sval);
+        if (n == NULL)
+            return VariableNotDeclared(arg2->sval);
+        else if(strcmp(n->val->type,INTEGER) == 0)
+            return newRealValue(fmod(arg1->rval,n->val->ival));
+        else if(strcmp(n->val->type,REAL) == 0)
+            return newRealValue(fmod(arg1->rval,n->val->rval));
+        else if(strcmp(n->val->type,STRING) == 0)
+            return newRealValue(fmod(arg1->rval,atoi(n->val->sval)));
+        else
+            return NULL;
+    }
+    else if(isPlus(op) && isVar(arg1) && isVar(arg2)){
+        node *n1 = Search(t,arg1->sval);
+        node *n2 = Search(t,arg2->sval);
+        if (n1 == NULL)
+            return VariableNotDeclared(arg1->sval);
+        else if (n1 == NULL)
+            return VariableNotDeclared(arg2->sval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(n1->val->ival + n2->val->ival);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newRealValue(arg1->rval + n2->val->ival);
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(atoi(n1->val->sval) + n2->val->ival);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(n1->val->rval + n2->val->rval);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newRealValue(arg1->rval + n2->val->rval);
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(atoi(n1->val->sval) + n2->val->rval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newIntegerValue(n1->val->rval + atoi(n2->val->sval));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newRealValue(arg1->rval + atof(n2->val->sval));
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,STRING) == 0)){
+            char *concat = malloc(sizeof(char) * (strlen(arg1->sval) + strlen(arg2->sval) + 1));
+            if (concat == 0) Fatal("out of memory\n");
+            sprintf(concat,"%s%s",arg1->sval,arg2->sval);
+            return newStringValue(concat);
+        }
+        else
+            return NULL;
+    }
+    else if(isMinus(op) && isVar(arg1) && isVar(arg2)){
+        node *n1 = Search(t,arg1->sval);
+        node *n2 = Search(t,arg2->sval);
+        if (n1 == NULL)
+            return VariableNotDeclared(arg1->sval);
+        else if (n1 == NULL)
+            return VariableNotDeclared(arg2->sval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(n1->val->ival - n2->val->ival);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newRealValue(arg1->rval - n2->val->ival);
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(atoi(n1->val->sval) - n2->val->ival);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(n1->val->rval - n2->val->rval);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newRealValue(arg1->rval - n2->val->rval);
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(atoi(n1->val->sval) - n2->val->rval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newIntegerValue(n1->val->rval - atoi(n2->val->sval));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newRealValue(arg1->rval - atof(n2->val->sval));
+        else
+            return NULL;
+    }
+    else if(isMult(op) && isVar(arg1) && isVar(arg2)){
+        node *n1 = Search(t,arg1->sval);
+        node *n2 = Search(t,arg2->sval);
+        if (n1 == NULL)
+            return VariableNotDeclared(arg1->sval);
+        else if (n1 == NULL)
+            return VariableNotDeclared(arg2->sval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(n1->val->ival * n2->val->ival);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newRealValue(arg1->rval * n2->val->ival);
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(atoi(n1->val->sval) * n2->val->ival);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(n1->val->rval * n2->val->rval);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newRealValue(arg1->rval * n2->val->rval);
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(atoi(n1->val->sval) * n2->val->rval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newIntegerValue(n1->val->rval * atoi(n2->val->sval));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newRealValue(arg1->rval * atof(n2->val->sval));
     else
         return NULL;
+    }
+    else if(isDivide(op) && isVar(arg1) && isVar(arg2)){
+        node *n1 = Search(t,arg1->sval);
+        node *n2 = Search(t,arg2->sval);
+        if (n1 == NULL)
+            return VariableNotDeclared(arg1->sval);
+        else if (n1 == NULL)
+            return VariableNotDeclared(arg2->sval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(n1->val->ival / n2->val->ival);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newRealValue(arg1->rval * n2->val->ival);
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(atoi(n1->val->sval) / n2->val->ival);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(n1->val->rval / n2->val->rval);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newRealValue(arg1->rval / n2->val->rval);
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(atoi(n1->val->sval) / n2->val->rval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newIntegerValue(n1->val->rval / atoi(n2->val->sval));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newRealValue(arg1->rval / atof(n2->val->sval));
+    else
+        return NULL;
+    }
+    else if(isExp(op) && isVar(arg1) && isVar(arg2)){
+        node *n1 = Search(t,arg1->sval);
+        node *n2 = Search(t,arg2->sval);
+        if (n1 == NULL)
+            return VariableNotDeclared(arg1->sval);
+        else if (n1 == NULL)
+            return VariableNotDeclared(arg2->sval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(pow(n1->val->ival,n2->val->ival));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newRealValue(pow(arg1->rval,n2->val->ival));
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(pow(atoi(n1->val->sval),n2->val->ival));
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(pow(n1->val->rval,n2->val->rval));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newRealValue(pow(arg1->rval,n2->val->rval));
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newIntegerValue(pow(atoi(n1->val->sval),n2->val->rval));
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newIntegerValue(pow(n1->val->rval,atoi(n2->val->sval)));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newRealValue(pow(arg1->rval,atof(n2->val->sval)));
+    else
+        return NULL;
+    }
+    else if(isMod(op) && isVar(arg1) && isVar(arg2)){
+        node *n1 = Search(t,arg1->sval);
+        node *n2 = Search(t,arg2->sval);
+        if (n1 == NULL)
+            return VariableNotDeclared(arg1->sval);
+        else if (n1 == NULL)
+            return VariableNotDeclared(arg2->sval);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(n1->val->ival % n2->val->ival);
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newRealValue(fmod(arg1->rval,n2->val->ival));
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,INTEGER) == 0))
+            return newIntegerValue(atoi(n1->val->sval) % n2->val->ival);
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newRealValue(fmod(n1->val->ival,n2->val->rval));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newRealValue(fmod(arg1->rval,n2->val->rval));
+        else if((strcmp(n1->val->type,STRING) == 0) && (strcmp(n2->val->type,REAL) == 0))
+            return newRealValue(fmod(atof(n1->val->sval),n2->val->rval));
+        else if((strcmp(n1->val->type,INTEGER) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newIntegerValue(n1->val->ival % atoi(n2->val->sval));
+        else if((strcmp(n1->val->type,REAL) == 0) && (strcmp(n2->val->type,STRING) == 0))
+            return newRealValue(fmod(arg1->rval,atof(n2->val->sval)));
+    else
+        return NULL;
+    }
+    else {
+        fprintf(stderr,"Error the operation ");
+        displayValue(stderr,arg1);
+        displayValue(stderr,op);
+        displayValue(stderr,arg2);
+        fprintf(stderr,"is not supported\n");
+        exit(1);
+        return NULL;
+    }
 }

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "value.h"
+#include "Fatal.h"
 
 char *INTEGER = "INTEGER";
 char *REAL = "REAL";
@@ -90,8 +91,10 @@ displayValue(FILE *fp,value *v)
 
 static value *newValue(char *t)
 {
-    value *n = malloc(sizeof(value));
-    if (n == 0) { fprintf(stderr,"out of memory"); exit(-1); }
+    value *n ;
+    if ((n = malloc(sizeof(value))) == 0){
+        Fatal("out of memory\n");
+    }
     n->type = t;
     return n;
 }

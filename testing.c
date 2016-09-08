@@ -12,6 +12,7 @@
 #include "node.h"
 #include "stack.h"
 #include "queue.h"
+#include "tree.h"
 
 typedef struct test{
     int testsPassed;
@@ -302,12 +303,70 @@ void TestQueue(test *t){
     DestroyQueue(q);
     free(q);
 }
+void TestTree(test *t){
+    tree *tr = newTree();
+    int INT_VAR = 10;
+    double REAL_VAR = 1.1;
+    char *STRING_VAR = malloc(12 + 1);
+    strcpy(STRING_VAR,"Hello World");
+    char *VARIABLE_VAR = malloc(19 + 1);
+    strcpy(VARIABLE_VAR,"This is a Var Name");
+    value *v0,*v1,*v2,*v3;
+    v0 = newIntegerValue(INT_VAR);
+    TestSetValue(t,v0);
+    v1 = newRealValue(REAL_VAR);
+    TestSetValue(t,v1);
+    v2 = newStringValue(STRING_VAR);
+    TestSetValue(t,v2);
+    v3 = newVariableValue(VARIABLE_VAR);
+    TestSetValue(t,v3);
+    node *n0,*n1,*n2,*n3;
+    n0 = newNode(v0);
+    TestSetNode(t,n0);
+    n1 = newNode(v1);
+    TestSetNode(t,n1);
+    n2 = newNode(v2);
+    TestSetNode(t,n2);
+    n3 = newNode(v3);
+    TestSetNode(t,n3);
+    n0->key = "x";
+    Insert(tr,n0);
+    n0 = NULL;
+    t->testsRan++;
+    n0 = Search(tr,"x");
+    if(n0->val->ival == 10)
+        t->testsPassed++;
+    n1->key = "y";
+    Insert(tr,n1);
+    n1 = NULL;
+    t->testsRan++;
+    n1 = Search(tr,"y");
+    if(n1->val->rval == 1.1)
+        t->testsPassed++;
+    //printTree(tr);
+    Delete(tr,"x");
+    n0 = NULL;
+    t->testsRan++;
+    n0 = Search(tr,"x");
+    if(n0 == NULL)
+        t->testsPassed++;
+    Delete(tr,"y");
+    n0 = NULL;
+    t->testsRan++;
+    n0 = Search(tr,"y");
+    if(n0 == NULL)
+        t->testsPassed++;
+    //printf("Deleting 10\n");
+    //printTree(tr);
+    free(tr);
+}
 int main(int argc, char **argv) {
     test t;
     t.testsRan = 0;
     t.testsPassed = 0;
     TestStack(&t);
     TestQueue(&t);
+    TestTree(&t);
     if(t.testsRan == t.testsPassed)
         printf("All %d Tests Passed\n",t.testsPassed);
     else if(t.testsRan > t.testsPassed)
